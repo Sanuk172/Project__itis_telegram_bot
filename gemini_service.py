@@ -193,13 +193,11 @@ Now analyze the text."""
         return result
     
     def continue_dialogue(self, conversation_history, user_message, ai_role="seller"):
-        """Продолжить диалог в роли продавца или покупателя
-        
-        ai_role: роль которую играет ИИ (seller или buyer)
-        """
+        """Продолжить диалог в роли продавца или покупателя"""
         
         if ai_role == "seller":
-            system_instruction = """You are a friendly shop assistant/seller in a store. Your task is to help the customer choose products, answer their questions, and suggest alternatives.
+            system_instruction = """You are a friendly shop assistant/seller in a store.
+             Your task is to help the customer choose products, answer their questions, and suggest alternatives.
 
 IMPORTANT RULES:
 1. Respond ONLY in English
@@ -210,7 +208,8 @@ IMPORTANT RULES:
             role_label_user = "Customer"
             role_label_ai = "Seller"
         else:
-            system_instruction = """You are a customer in a store. Your task is to ask about products, inquire about prices and features.
+            system_instruction = """You are a customer in a store.
+             Your task is to ask about products, inquire about prices and features.
 
 IMPORTANT RULES:
 1. Respond ONLY in English
@@ -239,4 +238,3 @@ Continue the following store dialogue:
 Your response as {role_label_ai} (in English only):"""
         
         return self.generate_text(full_prompt)
-

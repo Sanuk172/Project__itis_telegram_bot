@@ -168,4 +168,3 @@ class Database:
             }
             for row in results
         ]
-

@@ -12,11 +12,10 @@ class Vocabulary:
     def parse_vocabulary_response(self, response, topic):
         """Парсить текстовый ответ от Gemini и извлечь слова"""
         words = []
-        
-        # Разбиваем по паттерну "СЛОВО X:"
+
         word_blocks = re.split(r'СЛОВО\s*\d+\s*:', response, flags=re.IGNORECASE)
         
-        for block in word_blocks[1:]:  # Пропускаем первый пустой элемент
+        for block in word_blocks[1:]:
             if not block.strip():
                 continue
             
@@ -183,7 +182,7 @@ class Vocabulary:
         text = f"📚 Тема: {vocabulary_data.get('topic', 'Unknown')}\n\n"
         
         for i, word in enumerate(vocabulary_data['words'], 1):
-            text += f"{i}. {word.get('word', '')} {word.get('transcription', '')}\n"
+            text += f"{i}. {word.get('word', '')} [{word.get('transcription', '')}]\n"
             text += f"   Перевод: {word.get('translation', '')}\n"
             text += f"   Пример: {word.get('example_en', '')}\n"
             if word.get('example_ru'):
@@ -197,13 +196,15 @@ class Vocabulary:
         if not vocabulary_data or 'words' not in vocabulary_data:
             return "Слова не найдены"
         
-        text = f"📚 *{vocabulary_data.get('topic', 'Unknown')}*\n\n"
+        text = f"📚 Тема: *{vocabulary_data.get('topic', 'Unknown')}*\n\n"
         
         for i, word in enumerate(vocabulary_data['words'], 1):
-            text += f"*{i}.* {word.get('word', '')} {word.get('transcription', '')}\n"
+            text += f"*{i}.* {word.get('word', '')} [{word.get('transcription', '')}]\n"
             text += f"_{word.get('translation', '')}_\n"
             if word.get('example_en'):
-                text += f"💬 {word.get('example_en', '')}\n"
+                text += f"🇬🇧 {word.get('example_en', '')}\n"
+            if word.get('example_ru'):
+                text += f"🇷🇺 {word.get('example_ru', '')}\n"
             text += "\n"
             
             # Если текст становится слишком длинным, делаем разбивку
@@ -218,4 +219,3 @@ class Vocabulary:
     def get_user_vocabulary_history(self, user_id):
         """Получить историю изученных слов пользователя"""
         return self.db.get_user_vocabulary(user_id)
-

@@ -40,14 +40,8 @@ class Dialogue:
         return initial_message
     
     def send_message(self, user_id, user_message):
-        """Отправить сообщение в диалог
-        
-        Returns: dict с полями:
-            - response: ответ ИИ
-            - grammar_check: результат проверки грамматики
-            - is_finished: True если диалог завершён
-            - stats: статистика (если диалог завершён)
-        """
+        """Отправить сообщение в диалог"""
+
         if user_id not in self.conversations:
             # Если диалог не начат, начинаем его с дефолтными ролями
             self.start_dialogue(user_id)
@@ -122,10 +116,7 @@ class Dialogue:
         }
     
     def end_dialogue(self, user_id):
-        """Завершить диалог и сохранить в БД
-        
-        Returns: статистика диалога
-        """
+        """Завершить диалог и сохранить в БД"""
         if user_id in self.conversations:
             stats = self.get_statistics(user_id)
             messages = self.conversations[user_id]['messages']
@@ -155,4 +146,3 @@ class Dialogue:
         if user_id in self.conversations:
             return self.conversations[user_id].get('exchange_count', 0)
         return 0
-

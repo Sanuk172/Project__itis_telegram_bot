@@ -29,6 +29,31 @@ logger = logging.getLogger(__name__)
     WAITING_FOR_DIALOGUE_MESSAGE,
 ) = range(3)
 
+# Текст в help_command и menu_help
+help_text = """
+📖 *Помощь по командам:*
+
+*/start* - Главное меню
+
+*/test* - Создать тест по временам английского языка
+  Выберите тип времен (Present, Past, Future или все)
+  Ответьте на вопросы, выбрав вариант a, b, c или d
+  
+*/dialogue* - Начать диалог в роли продавца или покупателя
+  Практикуйте английский в реальных ситуациях
+  ИИ проверяет вашу грамматику после каждого сообщения
+  Диалог автоматически завершается после 10 обменов репликами
+  
+*/vocabulary* - Изучить новые слова по конкретной теме
+  Укажите тему, и бот сгенерирует список слов с примерами
+  
+*/history* - Посмотреть историю ваших тестов и изученных слов
+
+*/cancel* - Отменить текущее действие
+
+Удачи в изучении английского! 🚀
+"""
+
 # Глобальные объекты
 db = Database()
 grammar_tests = {}  # Храним тесты для каждого пользователя
@@ -75,28 +100,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Обработчик команды /help"""
-    help_text = """
-📖 *Помощь по командам:*
-
-*/start* - Главное меню
-*/test* - Создать тест по временам английского языка
-  Выберите тип времен (Present, Past, Future или все)
-  Ответьте на вопросы, выбрав вариант a, b, c или d
-  
-*/dialogue* - Начать диалог в роли продавца или покупателя
-  Практикуйте английский в реальных ситуациях
-  ИИ проверяет вашу грамматику после каждого сообщения
-  Диалог автоматически завершается после 10 обменов
-  
-*/vocabulary* - Изучить новые слова по конкретной теме
-  Укажите тему, и бот сгенерирует список слов с примерами
-  
-*/history* - Посмотреть историю ваших тестов и изученных слов
-
-*/cancel* - Отменить текущее действие
-
-Удачи в изучении английского! 🚀
-    """
     await update.message.reply_text(help_text, parse_mode='Markdown')
 
 
@@ -112,6 +115,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "📝 Выберите тип времен для теста:",
             reply_markup=get_tense_keyboard()
         )
+
     elif data == "menu_dialogue":
         await query.edit_message_text(
             "💬 Выберите вашу роль в диалоге:\n\n"
@@ -121,35 +125,35 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "⏱️ Диалог завершится после 10 обменов репликами",
             reply_markup=get_role_keyboard()
         )
+
     elif data == "menu_vocabulary":
-        await query.message.reply_text(
-            "📚 Введите тему для изучения слов (например: 'food', 'travel', 'technology'):"
+        keyboard = [[InlineKeyboardButton("◀️ Назад", callback_data="menu_back")]]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await query.edit_message_text(
+            "📚 Введите тему для изучения слов (например: 'food', 'travel', 'technology'):",
+            reply_markup=reply_markup
         )
         dialogue_states[query.from_user.id] = WAITING_FOR_VOCAB_TOPIC
+
     elif data == "menu_history":
         await show_history(query.from_user.id, query, is_callback=True)
+
     elif data == "menu_help":
-        help_text = """
-📖 *Помощь по командам:*
+        keyboard = [[InlineKeyboardButton("◀️ Назад", callback_data="menu_back")]]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await query.edit_message_text(help_text, parse_mode='Markdown', reply_markup=reply_markup)
 
-*/start* - Главное меню
-*/test* - Создать тест по временам английского языка
-*/dialogue* - Начать диалог в роли продавца или покупателя
-*/vocabulary* - Изучить новые слова по конкретной теме
-*/history* - Посмотреть историю ваших тестов и изученных слов
-*/cancel* - Отменить текущее действие
-
-Удачи в изучении английского! 🚀
-        """
-        await query.edit_message_text(help_text, parse_mode='Markdown')
     elif data == "menu_back":
+        dialogue_states.pop(query.from_user.id, None)
         await query.edit_message_text(
             "Главное меню:",
             reply_markup=get_main_keyboard()
         )
+
     elif data.startswith("tense_"):
         tense = data.replace("tense_", "")
         await start_test_callback(query, context, tense)
+
     elif data.startswith("role_"):
         # Роль пользователя
         user_role = "seller" if "seller" in data else "buyer"
@@ -490,7 +494,7 @@ async def show_history(user_id, message_or_query, is_callback=False):
     vocab_history = vocabulary_service.get_user_vocabulary_history(user_id)
     
     text = "📊 *Ваша история:*\n\n"
-    
+
     if test_history:
         text += "📝 *Последние тесты:*\n"
         for test in test_history[:5]:
@@ -498,18 +502,21 @@ async def show_history(user_id, message_or_query, is_callback=False):
         text += "\n"
     else:
         text += "📝 Тесты еще не пройдены\n\n"
-    
+
     if vocab_history:
         text += "📚 *Изученные темы:*\n"
         for vocab in vocab_history[:5]:
             text += f"• {vocab['topic']} ({vocab['learned_at']})\n"
     else:
         text += "📚 Темы еще не изучены"
+
+    keyboard = [[InlineKeyboardButton("◀️ Назад", callback_data="menu_back")]]
+    reply_markup = InlineKeyboardMarkup(keyboard)
     
     if is_callback:
-        await message_or_query.edit_message_text(text, parse_mode='Markdown')
+        await message_or_query.edit_message_text(text, parse_mode='Markdown', reply_markup=reply_markup)
     else:
-        await message_or_query.reply_text(text, parse_mode='Markdown')
+        await message_or_query.reply_text(text, parse_mode='Markdown', reply_markup=reply_markup)
 
 
 async def history_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -519,12 +526,25 @@ async def history_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Отменить текущее действие"""
+    """Отменить текущее действие и сохранить промежуточный результат"""
     user_id = update.effective_user.id
     
     # Очищаем состояния
     if user_id in grammar_tests:
+        test = grammar_tests[user_id]
+        if test.user_answers:
+            test_results = test.get_results()
+            db.save_test_result(user_id, test_results, test_results['score'])
+            message_text = (
+                f"⚠️ Тест прерван.\n"
+                f"💾 Промежуточный результат сохранен.\n"
+                f"✅ Правильных ответов: {test_results['correct_answers']}/{test_results['total_questions']}\n"
+                f"📊 Текущая оценка: {test_results['score']}%"
+            )
+        else:
+            message_text = "❌ Тест отменен (результаты не сохранены, так как не было ответов)."
         del grammar_tests[user_id]
+
     
     # Если был активный диалог, показываем статистику
     if dialogues.is_active(user_id):
@@ -541,7 +561,8 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("❌ Действие отменено.")
     
     dialogue_states.pop(user_id, None)
-    
+
+    await update.message.reply_text(message_text, parse_mode='Markdown')
     await update.message.reply_text("Используйте /start для начала.")
     return ConversationHandler.END
 
